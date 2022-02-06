@@ -74,16 +74,15 @@ xlabel('Month')
 CV_montecarlo_means = zeros(length(lambda_vec),1);
 CV_montecarlo_variances = zeros(length(lambda_vec),1);
 CV_ci = zeros(length(lambda_vec),2);
-
+CV_all_vals = zeros(length(lambda_vec),n);
 for i =1:length(lambda_vec)
-    u = rand(n,1);
-    [F_c_inv, c] = truncate_wbl_dist(lambda_vec(i), k_vec(i), n,u);
-    power = P((F_c_inv)).*(1-c);
+    wind = wblrnd(lambda_vec(i), k_vec(i), n, 1);
+    power = P(wind);
     mean_power = mean(power);
     
     old_var = var(power);
     % här kommer CV in!
-    new_var = (1-corr(F_c_inv,power).^2)*old_var;
+    new_var = (1-corr(wind,power).^2)*old_var;
     
     CV_montecarlo_means(i) = mean_power;
     CV_montecarlo_variances(i) = new_var;
