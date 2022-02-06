@@ -156,7 +156,19 @@ title('Antithetic sampling')
 ylabel('Power')
 xlabel('Month')
 %% 2.e
-nnz(power)/n;
+
+non_zero_prob = zeros(length(k_vec),1);
+for i = 1:length(k_vec)
+    wind = wblrnd(lambda_vec(i), k_vec(i), n, 1);
+    power=P(wind);
+    non_zero_prob(i) = nnz(power)/n;
+end
+
+figure(13)
+plot(non_zero_prob, 'o')
+title('Probability of positive power-output')
+ylabel('Probability')
+xlabel('Month')
 
 %% 2.f
 
@@ -192,9 +204,11 @@ for i=1:length(k_vec)
 
     max_capacity = 15*10^6;
     availability_vec(i) = nnz(power_temp)/n;
-    capacity_vec(i) = AS_montecarlo_means(i) /max_capacity; % not our best estimate
+    capacity_vec(i) = crude_montecarlo_means(i) /max_capacity;
 end
 
+mean(capacity_vec)
+mean(availability_vec)
 figure(6) 
 subplot(211)
 plot(availability_vec,'o')
