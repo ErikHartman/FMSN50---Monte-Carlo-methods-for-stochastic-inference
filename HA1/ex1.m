@@ -75,6 +75,7 @@ CV_montecarlo_means = zeros(length(lambda_vec),1);
 CV_montecarlo_variances = zeros(length(lambda_vec),1);
 CV_ci = zeros(length(lambda_vec),2);
 CV_all_vals = zeros(length(lambda_vec),n);
+corrs = zeros(length(lambda_vec),1);
 for i =1:length(lambda_vec)
     wind = wblrnd(lambda_vec(i), k_vec(i), n, 1);
     power = P(wind);
@@ -83,14 +84,14 @@ for i =1:length(lambda_vec)
     old_var = var(power);
     % här kommer CV in!
     new_var = (1-corr(wind,power).^2)*old_var;
-    
+    corrs(i)  = corr(wind,power);
     CV_montecarlo_means(i) = mean_power;
     CV_montecarlo_variances(i) = new_var;
     cl = 1.96*sqrt(new_var/n);
     CV_ci(i,1) = mean_power + cl;
     CV_ci(i,2) = mean_power-cl;
 end 
-
+mean(corrs)
 %% 2c Test with g as gamma dist
 % IS = importance sampling
 IS_montecarlo_means = zeros(length(lambda_vec),1);
