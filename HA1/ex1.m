@@ -35,7 +35,7 @@ for i = 1:length(lambda_vec)
 end
 figure(1)
 boxplot(crude_all_vals')
-title('Raw Monte Carlo')
+% title('Raw Monte Carlo')
 ylabel('Power')
 xlabel('Month')
 
@@ -48,7 +48,7 @@ for i =1:length(lambda_vec)
     % Weibull inv according to formula in 1.
     u = rand(n,1);
     [F_c_inv, c]  = truncate_wbl_dist(lambda_vec(i), k_vec(i),n,u);
-
+    
     % New power 
     power = P((F_c_inv)).*(1-c)';
     truncated_all_vals(i,:) = power; %här multiplicerar vi med c
@@ -63,7 +63,7 @@ for i =1:length(lambda_vec)
 end 
 figure(2)
 boxplot(truncated_all_vals')
-title('Truncated Monte Carlo')
+% title('Truncated Monte Carlo')
 ylabel('Power')
 xlabel('Month')
 %% 2.b Use wind V as control variate (CV = control variate)
@@ -118,7 +118,7 @@ for i =1:length(lambda_vec)
 end
 figure(3)
 boxplot(IS_all_vals')
-title('Importance sampling')
+% title('Importance sampling')
 ylabel('Power')
 xlabel('Month')
 
@@ -152,7 +152,7 @@ for i = 1:length(k_vec)
 end
 figure(4)
 boxplot(AS_all_vals')
-title('Antithetic sampling')
+% title('Antithetic sampling')
 ylabel('Power')
 xlabel('Month')
 %% 2.e
@@ -166,7 +166,7 @@ end
 
 figure(13)
 plot(non_zero_prob, 'o')
-title('Probability of positive power-output')
+% title('Probability of positive power-output')
 ylabel('Probability')
 xlabel('Month')
 
@@ -191,7 +191,7 @@ end
 
 figure(5)
 boxplot(ratio_all_vals')
-title('Ratio')
+% title('Ratio')
 ylabel('Power ratio')
 xlabel('Month')
 %% 2.g
@@ -231,7 +231,7 @@ IS_var_mean = IS_montecarlo_variances';
 AS_var_mean = AS_montecarlo_variances';
 figure(7)
 plot([crude_var_mean truncated_var_mean CV_var_mean IS_var_mean AS_var_mean],'x')
-title('Variance for different methods')
+% title('Variance for different methods')
 xticks([6 18 30 42 54])
 xticklabels({'Raw' 'Trunc' 'CV' 'IS' 'AS'})
 ylabel('Log-scale')
@@ -245,7 +245,7 @@ IS_mean = IS_montecarlo_means';
 AS_mean = AS_montecarlo_means';
 figure(8)
 plot([crude_mean truncated_mean CV_mean IS_mean AS_mean],'x')
-title('Means for different methods')
+% title('Means for different methods')
 xticks([6 18 30 42 54])
 xticklabels({'Raw' 'Trunc' 'CV' 'IS' 'AS'})
 ylabel('Log-scale')
