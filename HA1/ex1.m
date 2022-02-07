@@ -177,6 +177,7 @@ d = 236;
 coeff = 0.25*0.5*rho*pi*d^2;
 ratio_means = zeros(length(lambda_vec),1);
 ratio_variances = zeros(length(lambda_vec),1);
+ratio_ci=zeros(length(lambda_vec),2);
 ratio_all_vals = zeros(length(lambda_vec),n);
 for i=1:length(k_vec)
     E_p_tot = gamma(1+3/k_vec(i))*lambda_vec(i)^3;
@@ -184,7 +185,8 @@ for i=1:length(k_vec)
     ratio_all_vals(i,:) = ratio;
     ratio_variances(i) = var(AS_montecarlo_means(i))/(coeff*E_p_tot)^2;
     ratio_means(i) = mean(ratio);
-    
+    ratio_ci(i, 1)=mean(ratio) + norminv(0.975).*std(ratio)./sqrt(n/2);
+    ratio_ci(i, 2)=mean(ratio) - norminv(0.975).*std(ratio)./sqrt(n/2);
 end
 
 figure(5)
