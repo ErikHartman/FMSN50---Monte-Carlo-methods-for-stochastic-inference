@@ -147,7 +147,7 @@ for i = 1:length(k_vec)
     tau_AS = mean(W);
     AS_montecarlo_means(i) = tau_AS;
     AS_montecarlo_variances(i)  = var(W);
-    AS_ci(i,1) = tau_AS + norminv(0.975)*std(W)./sqrt(n/2); % Varför n/2?
+    AS_ci(i,1) = tau_AS + norminv(0.975).*std(W)./sqrt(n/2); % Varför n/2?
     AS_ci(i,2)= tau_AS - norminv(0.975)*std(W)./sqrt(n/2);
 end
 figure(4)
@@ -322,11 +322,11 @@ px=P(X1(:, 1)).*w;
 py=P(X1(:, 2)).*w;
 
 % Calculate covar, variance and std.
-pxpy=px.*py;
+pxpy=px.*py.*w;
 cova = mean(pxpy) - mean(px).*mean(py);
 cov_scalar=mean(cova);
 variance = var(px)+var(py)+2*cov_scalar
-std=sqrt(variance)
+std_1=sqrt(variance)
 
 % Try with gamma dist - worse!
 g = @(v1, v2) gampdf(v1, 9.7, 1.25) .* gampdf(v2, 9.7, 1.25);
@@ -342,7 +342,7 @@ pxpy=px.*py.*w;
 cova = mean(pxpy) - mean(px).*mean(py);
 cov_scalar=mean(cova);
 variance = var(px)+var(py)+2*cov_scalar;
-std=sqrt(variance);
+std_2=sqrt(variance);
 
 %% 3d part 1.
 v1=0:0.5:35; % wind
