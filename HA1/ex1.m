@@ -322,9 +322,9 @@ px=P(X1(:, 1)).*w;
 py=P(X1(:, 2)).*w;
 
 % Calculate covar, variance and std.
-pxpy=px.*py.*w;
+pxpy=P(X1(:, 1)).*P(X1(:, 2)).*w;
 cova = mean(pxpy) - mean(px).*mean(py);
-cov_scalar=mean(cova);
+cov_scalar=mean(cova)
 variance = var(px)+var(py)+2*cov_scalar
 std_1=sqrt(variance)
 
