@@ -252,7 +252,7 @@ ylabel('Log-scale')
 set(gca, 'YScale', 'log')
 
 
-%% 3 a old
+%% 3 a 
 % to get expected value 
 lambda = 10.05;
 k = 1.95;
@@ -269,18 +269,6 @@ g = gampdf(x,9.70,1.25);
 w =  f./ g;
 mean_P1_P2 = mean(2*P(x) .*w');
 var_P1_P2 = var(P(x).*w'); %samma för båda
-
-%% 3b old
-% covariance cov(X,Y) = E(XY)-E(X)E(Y)
-mean_P1P2 = mean(P(x).*P(x).*w'); % Måste vi inte importance sample?
-var_P1P2 = var(P(x).*P(x).*w');
-cov_P1_P2 = mean_P1P2-(mean_P1_P2);
-
-%% 3c old
-% V(X+Y) = V(X) + V(Y) + 2C(X,Y)
-% D(X+Y) = sqrt(V(X+Y))
-var_P1_P2 = 2*var_P1_P2 + 2*cov_P1_P2;
-std_P1_P2 = sqrt(var_P1_P2);
 
 %% 3b,c new
 % covariance cov(X,Y) = E(XY)-E(X)E(Y)
@@ -347,8 +335,8 @@ variance = var(px)+var(py)+2*cov_scalar;
 std_2=sqrt(variance);
 
 %% 3d part 1.
-v1=0:0.5:35; % wind
-v2=0:0.5:35;
+v1=0:0.5:60; % wind
+v2=0:0.5:60;
 wind_dist_pdf = @(v) wblpdf(v, 10.05, 1.95)'; % Params given
 wind_dist_cdf = @(v) wblcdf(v, 10.05, 1.95)';
 alpha = 0.638;
@@ -401,8 +389,8 @@ total_prob=mean(eval./g_eval); % Total probability
 indicator2=@(v1, v2) P(v1)+P(v2)<15000000;
 
 % Define 2d gamma function to replicate our indicator*f
-const1 = 3.1;
-const2 = 2.1;
+const1 = 2.8;
+const2 = 2.5;
 g = @(v1, v2) gampdf(v1', const1, const2) * gampdf(v2, const1, const2);
 
 % Plot to see if it seems resonable
