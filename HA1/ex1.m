@@ -249,7 +249,8 @@ xticklabels({'Raw' 'Trunc' 'CV' 'IS' 'AS'})
 ylabel('Log-scale')
 set(gca, 'YScale', 'log')
 
-%% 3 a
+
+%% 3 a old
 % to get expected value 
 lambda = 10.05;
 k = 1.95;
@@ -267,48 +268,43 @@ w =  f./ g;
 mean_P1_P2 = mean(2*P(x) .*w');
 var_P1_P2 = var(P(x).*w'); %samma för båda
 
-%% 3b
+%% 3b old
 % covariance cov(X,Y) = E(XY)-E(X)E(Y)
 mean_P1P2 = mean(P(x).*P(x).*w'); % Måste vi inte importance sample?
 var_P1P2 = var(P(x).*P(x).*w');
 cov_P1_P2 = mean_P1P2-(mean_P1_P2);
 
-%% 3c
+%% 3c old
 % V(X+Y) = V(X) + V(Y) + 2C(X,Y)
 % D(X+Y) = sqrt(V(X+Y))
 var_P1_P2 = 2*var_P1_P2 + 2*cov_P1_P2;
 std_P1_P2 = sqrt(var_P1_P2);
 
-%% 3d
-% Vi börjar med att kolla hur phi(x)*f(x,y) ser ut för att hitta en lämplig
-% multivariate g(x,y)
-v1=0:0.5:35; % vind i vanlig ordning
-v2=0:0.5:35;
-wind_dist_pdf = @(v) wblpdf(v, 10.05, 1.95)'; % Parametrar givna i uppgiften
-wind_dist_cdf = @(v) wblcdf(v, 10.05, 1.95)';
+%% 3b,c new
+% covariance cov(X,Y) = E(XY)-E(X)E(Y)
+% Define wind and params
+v1=0:0.5:30; 
+v2=0:0.5:30;
+lambda = 10.05;
+k = 1.95;
+V_1 = wblrnd(lambda, k, n, 1); % Generate separate winds
+V_2 = wblrnd(lambda, k, n, 1);
 alpha = 0.638;
 p=3;
 q=1.5;
 
-%Multivariate density function:
+wind_dist_pdf = @(v) wblpdf(v, 10.05, 1.95)';
+wind_dist_cdf = @(v) wblcdf(v, 10.05, 1.95)';
 f = @(v_1, v_2) wind_dist_pdf(v_1).*wind_dist_pdf(v_2).*(1+alpha*((1-wind_dist_cdf(v_1).^p).^(q-1)).*((1-wind_dist_cdf(v_2).^p).^(q-1)).*(wind_dist_cdf(v_1).^p.*(1+p*q)-1).*(wind_dist_cdf(v_2).^p.*(1+p*q)-1));
-
-% Kör 3D plottar, här plottas phi(x)*phi(y)*f(x,y) (är ej helt säker om det
-% räcker med en av dom...
+mu = [12, 12];
+Sigma = [17, 3; 3, 17];
+% Plot the distributions
 [X,Y] = meshgrid(v1,v2);
 px = reshape(P(X),length(v2),length(v1));
 py = reshape(P(Y),length(v2),length(v1));
-Z1=f(X,Y).*px.*py;
+Z1=px.*py.*f(X,Y);
 figure
-surf(X,Y,Z1); % Ser ut typ som en multivariant normalfördelning kan passa ok!
-xlabel('v1')
-ylabel('v2')
-
-% Bygg multivariant normal, testade mig fram med parametrarna. Verkar som
-% ju mer off desto mer påverkas total sannolikhet, typ rimligt?
-mu = [12, 12];
-Sigma = [16, 3; 3, 16];
-
+surf(X,Y,Z1)
 X = [X(:) Y(:)];
 g = mvnpdf(X,mu,Sigma);
 g = reshape(g,length(v2),length(v1));
@@ -316,18 +312,125 @@ Z2=g;
 figure
 surf(v1,v2,Z2);
 
-% Generera slumptal från den fördelningen.
+% IS to get the estimates.
 X1=mvnrnd(mu,Sigma,n);
-g_eval=mvnpdf(X1,mu,Sigma); % evaluera alla värden i g
+eval=f(X1(:,1),X1(:,2))'; % Utvärdera f motsvarande
+g_eval=mvnpdf(X1,mu,Sigma);
+w=eval./g_eval;
+%plot(w)
+px=P(X1(:, 1)).*w;
+py=P(X1(:, 2)).*w;
 
-indicator=@(v1, v2) P(v1)+P(v2)>15000000; % skapa indikator, ny phi(x)
-ind=indicator(X1(:, 1), X1(:, 2)); % Utvärdera alla genererade vindar
-f_eval=f(X1(:,1),X1(:,2))'; % Utvärdera f motsvarande
-val=ind.*f_eval./g_eval; % Sannolikhetsvektor att P>15MW
-probability=mean(val) % Sannolikheten för ovanstående, runt 0.5
-total_prob=mean(f_eval./g_eval) % total sannolikhet (utan indikator), runt 1
+% Calculate covar, variance and std.
+pxpy=px.*py;
+cova = mean(pxpy) - mean(px).*mean(py);
+cov_scalar=mean(cova);
+variance = var(px)+var(py)+2*cov_scalar
+std=sqrt(variance)
+
+% Try with gamma dist - worse!
+g = @(v1, v2) gampdf(v1, 9.7, 1.25) .* gampdf(v2, 9.7, 1.25);
+g_rand1=gamrnd(9.7, 1.25,1, n)';
+g_rand2=gamrnd(9.7, 1.25,1, n)';
+eval=f(g_rand1,g_rand2)'; % Utvärdera f motsvarande
+g_eval=g(g_rand1, g_rand2);
+w=eval./g_eval;
+%plot(w)
+px=P(g_rand1).*w;
+py=P(g_rand2).*w;
+pxpy=px.*py.*w;
+cova = mean(pxpy) - mean(px).*mean(py);
+cov_scalar=mean(cova);
+variance = var(px)+var(py)+2*cov_scalar;
+std=sqrt(variance);
+
+%% 3d part 1.
+v1=0:0.5:35; % wind
+v2=0:0.5:35;
+wind_dist_pdf = @(v) wblpdf(v, 10.05, 1.95)'; % Params given
+wind_dist_cdf = @(v) wblcdf(v, 10.05, 1.95)';
+alpha = 0.638;
+p=3;
+q=1.5;
+% Define multivariate density function:
+f = @(v_1, v_2) wind_dist_pdf(v_1).*wind_dist_pdf(v_2).*(1+alpha*((1-wind_dist_cdf(v_1).^p).^(q-1)).*((1-wind_dist_cdf(v_2).^p).^(q-1)).*(wind_dist_cdf(v_1).^p.*(1+p*q)-1).*(wind_dist_cdf(v_2).^p.*(1+p*q)-1));
+indicator1=@(v1, v2) P(v1)+P(v2)>15000000; % create indicator1
+
+% To use IS we need a function g(x,y) to mimic phi(x,y)f(x,y)
+% For the first indicator the objective function is defined on a finite
+% grid. Therefore, we should be fine with sampling from a multivariate
+% normal as before. But let's first plot that!
+
+[X,Y] = meshgrid(v1,v2);
+% Params for normal
+mu = [12, 12];
+Sigma = [35, 3; 3, 35];
+X2 = [X(:) Y(:)];
+g = mvnpdf(X2,mu,Sigma);
+g = reshape(g,length(v2),length(v1));
+ind=indicator1(X, Y);
+ind=reshape(ind,length(v2),length(v1));
+eval=f(X,Y).*ind;
+figure
+surf(v1,v2,eval); % Plot objective function times f
+
+figure
+surf(v1,v2,g) % Plot g
+
+figure
+surf(v1,v2,eval./g) % Plot ratio, bounded
+
+% Use this and sample from g
+X1=mvnrnd(mu,Sigma,n);
+g_eval=mvnpdf(X1,mu,Sigma); % Evaluate all g
+ind=indicator1(X1(:, 1), X1(:, 2)); % Evaluate all generated winds.
+eval=f(X1(:,1),X1(:,2))'; % Evaluate f the same way
+
+val=ind.*eval./g_eval; % Probability vector power>15MW.
+probability=mean(val); % Expected value of above.
+cl_over = 1.96*sqrt(var(val)/n); % 95% CL
+total_prob=mean(eval./g_eval); % Total probability
+%% 3 d part 2
+% When evaluating the other probability, now the region is infinite. To be
+% able to estimate the probability a new function g must be found that
+% decays slower than f*phi. Here we try a 2d gamma function.
+
+% Create new indicator as our objective function.
+indicator2=@(v1, v2) P(v1)+P(v2)<15000000;
+
+% Define 2d gamma function to replicate our indicator*f
+const1 = 3.1;
+const2 = 2.1;
+g = @(v1, v2) gampdf(v1', const1, const2) * gampdf(v2, const1, const2);
+
+% Plot to see if it seems resonable
+[X,Y] = meshgrid(v1,v2);
+g_wind=g(v1,v2);
+figure
+surf(v1,v2,g_wind)
+
+figure
+ind=indicator2(X, Y);
+ind=reshape(ind,length(v2),length(v1));
+eval=f(X,Y).*ind;
+surf(v1, v2, eval)
+
+figure
+surf(v1,v2,eval./g_wind); % Good enough...
+
+% Draw random variables from that distribution.
+g_rand1=gamrnd(const1, const2, 1, n)';
+g_rand2=gamrnd(const1, const2,1, n)';
+% evaluate g, ind and f
+g_eval=gampdf(g_rand1, const1, const2) .* gampdf(g_rand2, const1, const2); % evaluera alla värden i g
+ind=indicator2(g_rand1, g_rand2); % Utvärdera alla genererade vindar
+eval=f(g_rand1,g_rand2)'; % Utvärdera f motsvarande
 
 
+val=ind.*eval./g_eval; % Probability vector P>15MW
+probability=mean(val); % Expected value of above.
+cl_under = 1.96*sqrt(var(val)/n); % 95% CL
+total_prob=mean(eval./g_eval); % total probability
 
 %% functions
 function [t,c] = truncate_wbl_dist(lambda, k,n,u)
