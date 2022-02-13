@@ -25,9 +25,9 @@ ratio = nnz(X_SA) / N
 
 %% 4
 
-N_max = 30;
+N_max = 10;
 d = 2;
-k_max = 5;
+k_max = 100;
 estimated_c = zeros(N_max,1);
 for N = 2:N_max
     X = zeros(k_max,d, N);
@@ -81,7 +81,7 @@ d = 2;
 k_max = 100;
 estimated_c = zeros(N_max,1);
 
-for N = 2:N_max
+for N = 1:N_max
     X = zeros(k_max,d, N);
     c = zeros(N,1);
     w = zeros(k_max, N);
@@ -107,8 +107,13 @@ for N = 2:N_max
                 X(k+1,:,n) = new_pos;
             end
         end
-        
+
+        w(isnan(w))=0;
+        if(sum(w(k,:) == 0)) % problem att ibland blev alla vikter 0
+            break
+        end
         [X,w] = resample(X,w,N,k);
+        w = normalize_weights(w);
     end
     for n = 1:N
         [~,l,~] =  unique(X(:,:,n),'rows');
@@ -130,13 +135,14 @@ ylabel('c')
 %% functions
 
 function [X,w] = resample(X,w,N,k)
+
     ind = randsample(N,N,true,w(k,:));
     X = X(:,:, ind);
     w = w(:,ind);
 end
 
-function w = normalize_weights(weights,k)
-    w = weights(k,:) ./ sum(weights,2);
+function w = normalize_weights(weights)
+    w = weights ./ sum(weights,2);
 end
 
 function possible_new_positions = get_positions(curr_pos)
