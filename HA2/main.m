@@ -1,9 +1,9 @@
 %% 3
 
 % using a naive sequential importance sampling
-N = 2000;
+N = 100;
 d = 2;
-k_max = 50;
+k_max = 2;
 X = zeros(k_max,d, N);
 w = zeros(k_max, N);
 X_SA = zeros(1,N);
@@ -17,9 +17,6 @@ for n = 1:N
     end
     X_SA(n) =  length(unique(X(:,:,n),'rows')) == k_max+1;
 end
-plot(X(:,1,1),X(:,2,1))
-xlim([-10,10])
-ylim([-10,10])
 ratio = nnz(X_SA) / N
 
 
@@ -62,26 +59,27 @@ for N = 2:N_max
         c(n) = max(l);
         weight_at_index = w(max(l),n);
         c(n) = c(n) .* weight_at_index;
+        
     end
     E_c = sum(c);
     estimated_c(N) = E_c;
     
 end
-
-mean(estimated_c)
+SIS_est = mean(estimated_c)
 figure(1)
 plot(estimated_c, 'o')
-title('estimated c')
+title('SIS - estimated c')
 xlabel('N')
 ylabel('c')
+
 %% 5
 clear
-N_max = 20;
+N_max = 100;
 d = 2;
-k_max = 100;
+k_max = 50;
 estimated_c = zeros(N_max,1);
 
-for N = 1:N_max
+for N = 20:N_max
     X = zeros(k_max,d, N);
     c = zeros(N,1);
     w = zeros(k_max, N);
@@ -109,36 +107,33 @@ for N = 1:N_max
         end
 
         w(isnan(w))=0;
-        if(sum(w(k,:) == 0)) % problem att ibland blev alla vikter 0
-            break
+        if(sum(w(k,:) ~= 0))
+            [X,w] = resample(X,w,N,k);
+            w = normalize_weights(w);
         end
-        [X,w] = resample(X,w,N,k);
-        w = normalize_weights(w);
     end
     for n = 1:N
         [~,l,~] =  unique(X(:,:,n),'rows');
         c(n) = max(l);
         weight_at_index = w(max(l),n);
-        c(n) = c(n) .* weight_at_index;
-        
+        c(n) = c(n) .* weight_at_index;       
     end
     E_c = sum(c);
     estimated_c(N) = E_c;
 end
 
-mean(estimated_c)
+SIRS_est = mean(estimated_c)
 figure(2)
 plot(estimated_c, 'o')
-title('estimated c')
+title('SIRS - estimated c')
 xlabel('N')
 ylabel('c')
 %% functions
 
 function [X,w] = resample(X,w,N,k)
-
     ind = randsample(N,N,true,w(k,:));
     X = X(:,:, ind);
-    w = w(:,ind);
+    w(k,ind) = 1; 
 end
 
 function w = normalize_weights(weights)
