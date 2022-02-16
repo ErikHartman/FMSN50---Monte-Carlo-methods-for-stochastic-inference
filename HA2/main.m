@@ -155,6 +155,36 @@ A2_reg = expbeta(1);
 mu2_reg = expbeta(2);
 gamma2_reg = beta(3);
 
+%% Task 10
+N = 100;
+n = 50;
+tau = zeros(1,n); % vector of filter means
+w = zeros(N,1);
+p = @(x) unifpdf(x, x/2, x); % observation density, for weights
+part = unifrnd(1/5,3/5, N,1); % initialization
+w = p(part); % weighting
+tau(1) = sum(part.*w)/sum(w); % estimation
+ind = randsample(N,N,true,w); % selection
+part = part(ind);
+for k = 1:n % main loop
+    B = unifrnd(1/2,3); % Gäller för alla partiklar
+    part = B.*part.*(1-part); % mutation
+    w = p(part); % weighting
+    tau(k + 1) = sum(part.*w)/sum(w); % estimation
+    ind = randsample(N,N,true,w); % selection
+    part = part(ind);
+end
+
+%%
+load('population.mat')
+hold on
+plot(tau)
+
+%plot(X)
+plot(Y)
+legend("Tau","Y-true")
+
+hold off
 
 %% functions
 function [X,w] = resample(X,w,N,k)
