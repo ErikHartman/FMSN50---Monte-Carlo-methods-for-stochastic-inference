@@ -36,7 +36,7 @@ ylabel('Approximate number of SAW')
 
 %% 4 new
 
-% using a naive sequential importance sampling
+
 N = 1000;
 d = 2;
 k_max = 11;
