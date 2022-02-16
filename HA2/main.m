@@ -114,10 +114,10 @@ expbeta = exp(beta)';
 A2_reg = expbeta(1);
 mu2_reg = expbeta(2);
 gamma2_reg = beta(3);
-%% Test new possible node generator
+%% Task 9, general d
 % using a naive sequential importance sampling
-N = 100;
-d = 2;
+N = 1;
+d = 3;
 k_max = 11;
 X = zeros(k_max,d, N);
 SA = zeros(k_max,1);
@@ -140,13 +140,20 @@ for k = 1:k_max
     SA(k) = get_number_SA(X, k);
 end
 cn = mean(w(2:end,:),2);
-SA/N
 figure;
 plot(cn)
-%plot3(X(:,1,1), X(:,2,1),X(:,3,1), 'b')
+%plot3(X(:,1,1), X(:,2,1),X(:,3,1), 'b') % Plot random walk in 3d
 xlabel('Walk length')
 ylabel('Approximate number of SAW') 
+Y = log(cn) + log(1:k_max)';
+X_reg = [ones(k_max,1) (1:k_max)' log(1:k_max)'];
 
+beta = X_reg\Y;
+expbeta = exp(beta)';
+
+A2_reg = expbeta(1);
+mu2_reg = expbeta(2);
+gamma2_reg = beta(3);
 
 
 %% functions
