@@ -160,29 +160,38 @@ N = 100;
 n = 50;
 tau = zeros(1,n); % vector of filter means
 w = zeros(N,1);
-p = @(x) unifpdf(x, x/2, x); % observation density, for weights
-part = unifrnd(1/5,3/5, N,1); % initialization
-w = p(part); % weighting
+p = @(x,y) unifpdf(y, x/2, x); % observation density, for weights
+part = unifrnd(1/5,3/5,N,1); % initialization
+w = p(part, Y(1)); % weighting
 tau(1) = sum(part.*w)/sum(w); % estimation
 ind = randsample(N,N,true,w); % selection
 part = part(ind);
 for k = 1:n % main loop
-    B = unifrnd(1/2,3); % Gäller för alla partiklar
-    part = B.*part.*(1-part); % mutation
-    w = p(part); % weighting
-    tau(k + 1) = sum(part.*w)/sum(w); % estimation
-    ind = randsample(N,N,true,w); % selection
-    part = part(ind);
+    B = unifrnd(1/2,3,N,1); 
+    part = B.*part.*(1-part) % mutation
+    w = p(part, Y(k+1)) % weighting
+    tau(k + 1) = sum(part.*w)/sum(w) % estimation
+    ind = randsample(N,N,true,w) % selection
+    part = part(ind)
+    [xx,I]=sort(part); % sort data
+    cw=cumsum(w(I))/sum(w); % cumulative normalized weightsum
+    % for sorted data
+    Ilower=find(cw>=0.025,1); % index for lower 2.5% quantile
+    Iupper=find(cw>=0.975,1); % index upper 2.5% quantile
+    taulower(k+1)=xx(Ilower); % lower 2.5% quantile
+    tauupper(k+1)=xx(Iupper); % upper 2.5% quantile
 end
 
 %%
 load('population.mat')
 hold on
-plot(tau)
+plot(tau, 'b')
 
-%plot(X)
-plot(Y)
-legend("Tau","Y-true")
+plot(X, 'black')
+plot(taulower, 'r')
+plot(tauupper, 'r')
+%plot(Y)
+legend("Tau","X", "taulower","tauupper")
 
 hold off
 
