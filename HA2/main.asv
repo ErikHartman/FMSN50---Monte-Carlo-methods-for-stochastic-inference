@@ -1,7 +1,7 @@
 %% 3
 
 % using a naive sequential importance sampling
-N = 10000;
+N = 1000;
 d = 2;
 k_max = 11;
 X = zeros(k_max,d, N);
@@ -25,9 +25,8 @@ for k = 1:k_max
     end
     SA(k) = get_number_SA(X, k)*4^k;
 end
-cn = mean(w,2)
-variance = sqrt((var(w,0,2)/N))*1.96
-random = [cn variance]
+cn = mean(w(2:end,:),2)
+variance = (std(weights(2:end,:),2)/N)*1.9
 ratio = SA/N
 figure;
 plot(cn, 'b*-')
@@ -41,7 +40,8 @@ xlabel('Steps')
 
 %% 4 new
 
-N = 1000;
+
+N = 10000;
 d = 2;
 k_max = 11;
 X = zeros(k_max,d, N);
@@ -65,10 +65,8 @@ for k = 1:k_max
     end
     SA(k) = get_number_SA(X, k);
 end
-cn = mean(w(1:end,:),2);
-variance = sqrt((var(w,0,2)/N))*1.96;
-SIS = [cn variance]
-SA/N;
+cn = mean(w(2:end,:),2);
+SA/N
 figure;
 plot(cn)
 xlabel('Walk length')
@@ -76,7 +74,7 @@ ylabel('Approximate number of SAW')
 
 %% 5 new
 
-N = 100;
+N = 10000;
 d = 2;
 k_max = 11;
 X = zeros(k_max,d, N);
@@ -101,7 +99,8 @@ for k = 1:k_max
     [X,w] = resample(X,w,N,k); %borde
     SA(k) = get_number_SA(X, k); 
 end
-cn = cumprod(mean(w,2))
+cn = cumprod(mean(w(2:end,:),2));
+SA/N
 figure;
 plot(cn)
 xlabel('Walk length')
