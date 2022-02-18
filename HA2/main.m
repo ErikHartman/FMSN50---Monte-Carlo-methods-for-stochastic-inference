@@ -1,11 +1,12 @@
 %% 3
 
 % using a naive sequential importance sampling
-N = 10000;
+N = 100;
 d = 2;
 k_max = 11;
 X = zeros(k_max,d, N);
 SA = zeros(k_max,1);
+est = zeros(k_max,1);
 w = zeros(k_max,N);
 w(1, :) = 1;
 for k = 1:k_max
@@ -23,12 +24,13 @@ for k = 1:k_max
         new_pos = possible_new_pos(random_index,:);
         X(k+1,:,n) = new_pos;
     end
-    SA(k) = get_number_SA(X, k)*4^k;
+    SA(k) = get_number_SA(X, k);
+    est(k) = get_number_SA(X, k)*4^k;
 end
-cn = mean(w,2)
-variance = sqrt((var(w,0,2)/N))*1.96
-random = [cn variance]
-ratio = SA/N
+cn = mean(w(2:end,:),2);
+variance = var(w(2:end,:),0,2);
+random = [cn variance(:,1) SA/N];
+ratio = est/SA;
 figure;
 plot(cn, 'b*-')
 xlabel('Walk length')
@@ -41,7 +43,7 @@ xlabel('Steps')
 
 %% 4 new
 
-N = 1000;
+N = 10000;
 d = 2;
 k_max = 11;
 X = zeros(k_max,d, N);
@@ -60,56 +62,54 @@ for k = 1:k_max
         else
             random_index = randi(size(possible_new_pos,1));
             X(k+1,:,n) = possible_new_pos(random_index,:);
-            w(k+1,n) = w(k,n) * (1/(1/(length(possible_new_pos)))); 
+            w(k+1,n) = w(k,n) * (length(possible_new_pos)); 
         end
     end
     SA(k) = get_number_SA(X, k);
 end
-cn = mean(w(1:end,:),2);
-variance = sqrt((var(w,0,2)/N))*1.96;
-SIS = [cn variance]
-SA/N;
+cn = mean(w(2:end,:),2);
+variance = var(w(2:end,:),0,2);
+SIS = [cn sqrt(variance/N)];
 figure;
 plot(cn)
 xlabel('Walk length')
 ylabel('Approximate number of SAW') 
 
-%% 5 new
+%% 5 new 
 
-N = 100;
-d = 2;
-k_max = 11;
-X = zeros(k_max,d, N);
-SA = zeros(k_max,1);
+N = 1000;
+k_max = 11; 
+d = 2; 
+X = zeros(k_max,d,N);
 w = zeros(k_max,N);
-w(1, :) = 1;
-for k = 1:k_max
-    for n = 1:N
-        curr_pos = X(k,:,n);
-        history = X(:,:,n);
-        possible_new_pos = get_positions(curr_pos);
-        possible_new_pos = get_valid_positions(history, possible_new_pos);
-        if isempty(possible_new_pos)
-            X(k+1,:,n) = curr_pos;
-            w(k+1,n) = 0;
-        else
-            random_index = randi(size(possible_new_pos,1));
-            X(k+1,:,n) = possible_new_pos(random_index,:);
-            w(k+1,n) = w(k,n) * (1/(1/(length(possible_new_pos)))); 
-        end
+tries = 10;
+estimates = zeros(k_max-1,tries);
+w(1,:) = 1;
+
+for t = 1:tries
+    t
+    for k = 2:k_max
+       wd = cumsum(w(k - 1,:)./sum(w(k - 1,:))); 
+       for n = 1:N
+            parent_index = find((wd > rand) == 1);
+            parent_index = parent_index(1);
+            X(1:k - 1,:,n) = X(1:k - 1,:,parent_index);         
+            [new, nPossible] = improved_possible_dir(X(1:k - 1,:,n));
+            X(k,:,n) = X(k - 1,:,n) + new;
+            z = 1;
+            if(length(unique(X(1:k,:,n),'row')) < k)
+                z = 0;
+            end
+            w(k,n) = (z/(1/(nPossible))); 
+       end 
     end
-    [X,w] = resample(X,w,N,k); %borde
-    SA(k) = get_number_SA(X, k); 
+    cn = cumprod(mean(w(2:end,:),2));
+    estimates(:,t) = cn;
 end
-cn = cumprod(mean(w,2))
-figure;
-plot(cn)
-xlabel('Walk length')
-ylabel('Approximate number of SAW') 
-
-
+SIRS = [mean(estimates,2) sqrt(var(estimates,0,2))/N];
 %% 6
 
+cn = SIS(1,:)
 Y = log(cn) + log(1:k_max)';
 X_reg = [ones(k_max,1) (1:k_max)' log(1:k_max)'];
 
@@ -157,8 +157,10 @@ beta = X_reg\Y;
 expbeta = exp(beta)';
 
 A2_reg = expbeta(1);
-mu2_reg = expbeta(2);
+mu2_reg = expbeta(2)
 gamma2_reg = beta(3);
+
+Graham = 2*d-1-1/(2*d)-3/(2*d)^2-16/(2*d)^3
 
 %% Task 10
 N = 100;
@@ -203,6 +205,7 @@ hold off
 %% functions
 function [X,w] = resample(X,w,N,k)
     ind = randsample(N,N,true,w(k,:));
+    
     X = X(:,:, ind);
     w(k+1,ind) = 1; 
 end
@@ -253,6 +256,33 @@ function possible_nodes = get_valid_positions2(X,step,n)
         end
     end
     
+end
+
+function [newDir, nPossible] = improved_possible_dir(X)
+dims = size(X,2);
+% Check all directions
+oneHotDirs = [eye(dims); -eye(dims)];
+possibleDirs = zeros(2*dims, dims);
+for i = 1:2*dims
+    % If direction is free, add direction to possibleDirs
+    if isempty(intersect(X, X(end,:) + oneHotDirs(i,:), 'rows'))
+        possibleDirs(i,:) = oneHotDirs(i,:);
+    end
+end
+% Remove the zero rows
+possibleDirs = possibleDirs(~all(possibleDirs == 0,2), :);
+
+% Count how many of them are free
+nPossible = size(possibleDirs,1);
+% Choose a free direction at random
+
+if nPossible == 0
+   newDir = zeros(1,dims); 
+elseif nPossible == 1
+   newDir = possibleDirs;
+else
+   newDir = possibleDirs(randi(nPossible), :);
+end
 end
 
 
