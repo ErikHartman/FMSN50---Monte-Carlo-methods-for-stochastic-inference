@@ -191,13 +191,12 @@ end
 
 %%
 load('population.mat')
-figure;
 hold on
 x = 1:1:length(tau);
-plot(x,tau, 'b*-', 'linewidth',2)
+plot(x,tau, 'b', 'linewidth',2)
 
-
-patch([x fliplr(x)], [tauupper, fliplr(taulower)], 'r')
+% plot(X, 'black')
+patch([x(1:end) fliplr(x(1:)], [tauupper, fliplr(taulower)], 'r')
 alpha(.3)
 plot(taulower, 'r')
 plot(tauupper, 'r')
@@ -205,19 +204,9 @@ ylabel('Relative population size')
 xlabel('n')
 %plot(Y)
 legend(char([0xD835 0xDF0F]), "CI")
+
 hold off
 
-figure;
-hold on
-alpha(.5)
-x = 1:1:length(tau);
-plot(x,tau, 'b*-', 'linewidth',2)
-plot(X,'k*--', 'linewidth',2)
-
-legend(char([0xD835 0xDF0F]), "X")
-ylabel('Relative population size')
-xlabel('n')
-hold off
 %% functions
 function [X,w] = resample(X,w,N,k)
     ind = randsample(N,N,true,w(k,:));
