@@ -108,7 +108,6 @@ for t = 1:tries
 end
 SIRS = [mean(estimates,2) sqrt(var(estimates,0,2))/N];
 %% 6
-
 cn = SIS(1,:)
 Y = log(cn) + log(1:k_max)';
 X_reg = [ones(k_max,1) (1:k_max)' log(1:k_max)'];
@@ -189,14 +188,14 @@ for k = 1:n % main loop
     tauupper(k+1)=xx(Iupper); % upper 2.5% quantile
 end
 
-%%
+%% 10 plot
 load('population.mat')
 figure;
 hold on
 x = 1:1:length(tau);
 plot(x,tau, 'b*-', 'linewidth',2)
 
-
+plot(X,'k*--', 'linewidth',2)
 patch([x fliplr(x)], [tauupper, fliplr(taulower)], 'r')
 alpha(.3)
 plot(taulower, 'r')
@@ -221,7 +220,6 @@ hold off
 %% functions
 function [X,w] = resample(X,w,N,k)
     ind = randsample(N,N,true,w(k,:));
-    
     X = X(:,:, ind);
     w(k+1,ind) = 1; 
 end
@@ -276,22 +274,15 @@ end
 
 function [newDir, nPossible] = improved_possible_dir(X)
 dims = size(X,2);
-% Check all directions
-oneHotDirs = [eye(dims); -eye(dims)];
+newDirs = [eye(dims); -eye(dims)];
 possibleDirs = zeros(2*dims, dims);
 for i = 1:2*dims
-    % If direction is free, add direction to possibleDirs
-    if isempty(intersect(X, X(end,:) + oneHotDirs(i,:), 'rows'))
-        possibleDirs(i,:) = oneHotDirs(i,:);
+    if isempty(intersect(X, X(end,:) + newDirs(i,:), 'rows'))
+        possibleDirs(i,:) = newDirs(i,:);
     end
 end
-% Remove the zero rows
 possibleDirs = possibleDirs(~all(possibleDirs == 0,2), :);
-
-% Count how many of them are free
 nPossible = size(possibleDirs,1);
-% Choose a free direction at random
-
 if nPossible == 0
    newDir = zeros(1,dims); 
 elseif nPossible == 1

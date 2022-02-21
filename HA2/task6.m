@@ -2,8 +2,6 @@
 A = zeros(10,1);
 mu = zeros(10,1);
 gamma = zeros(10,1);
-
-
 N = 1000;
 k_max = 50 + 1; 
 d = 2; 
@@ -55,22 +53,15 @@ gamma
 %% functions
 function [newDir, nPossible] = improved_possible_dir(X)
 dims = size(X,2);
-% Check all directions
-oneHotDirs = [eye(dims); -eye(dims)];
+newDirs = [eye(dims); -eye(dims)];
 possibleDirs = zeros(2*dims, dims);
 for i = 1:2*dims
-    % If direction is free, add direction to possibleDirs
-    if isempty(intersect(X, X(end,:) + oneHotDirs(i,:), 'rows'))
-        possibleDirs(i,:) = oneHotDirs(i,:);
+    if isempty(intersect(X, X(end,:) + newDirs(i,:), 'rows'))
+        possibleDirs(i,:) = newDirs(i,:);
     end
 end
-% Remove the zero rows
 possibleDirs = possibleDirs(~all(possibleDirs == 0,2), :);
-
-% Count how many of them are free
 nPossible = size(possibleDirs,1);
-% Choose a free direction at random
-
 if nPossible == 0
    newDir = zeros(1,dims); 
 elseif nPossible == 1
