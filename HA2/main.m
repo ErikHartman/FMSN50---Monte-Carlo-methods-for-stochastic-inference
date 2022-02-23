@@ -194,28 +194,16 @@ figure;
 hold on
 x = 1:1:length(tau);
 plot(x,tau, 'b*-', 'linewidth',2)
-
-plot(X,'k*--', 'linewidth',2)
 patch([x fliplr(x)], [tauupper, fliplr(taulower)], 'r')
 alpha(.3)
+plot(X,'k*--')
+
 plot(taulower, 'r')
 plot(tauupper, 'r')
-ylabel('Relative population size')
-xlabel('n')
-%plot(Y)
-legend(char([0xD835 0xDF0F]), "CI")
-hold off
 
-figure;
-hold on
-alpha(.5)
-x = 1:1:length(tau);
-plot(x,tau, 'b*-', 'linewidth',2)
-plot(X,'k*--', 'linewidth',2)
-
-legend(char([0xD835 0xDF0F]), "X")
+legend(char([0xD835 0xDF0F]), "CI","X")
 ylabel('Relative population size')
-xlabel('n')
+xlabel('k')
 hold off
 %% functions
 function [X,w] = resample(X,w,N,k)
