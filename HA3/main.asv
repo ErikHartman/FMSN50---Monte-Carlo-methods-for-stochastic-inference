@@ -6,9 +6,10 @@ load('coal_mine_disasters.mat')
 
 % Define initial gamma(2,psi) to sample our theta, start by setting psi=1.
 % f(theta) in the task
-n=200
-thetas = gam_theta(2,n);
+n=2000
 gam_theta = @(psi,n) gamrnd(2,psi,n,1)
+thetas = gam_theta(2,n);
+
 % f(lambda|theta)
 gam_lambda_theta = @(theta) gamrnd(2,theta,n,1)
 lambdas_given_theta = gam_lambda_theta(thetas);
@@ -16,7 +17,7 @@ lambdas_given_theta = gam_lambda_theta(thetas);
 % f(lambda|theta)*f(theta)
 product=lambdas_given_theta.*thetas;
 
-histogram(product) % Exponential?
+histogram(product) % Gamma, we need to find the paramaters for each of these!
 
 %%  f(tau|lambda,t)*f(lambda|theta)
 
@@ -26,29 +27,58 @@ histogram(product) % Exponential?
 n_i = @(tau,i) sum(tau(tau>i & tau<i+1));
 
 
-tau_given_lambda_theta = @(t,lambda, tau) exp(-sum(lambda.*(t(2:end)-t(1:end-1))))%.*cumprod(lambda)
-n=3 % Three breakpoits
-t_out=create_breakpoints(n,T)
+n=5; % Three breakpoits
+t_out=create_breakpoints(n,T);
 thetas = gam_theta(2,n);
-gam_lambda_theta = @(theta) gamrnd(2,theta,n,1)
+gam_lambda_theta = @(theta) gamrnd(2,theta,n,1);
 lambdas = gam_lambda_theta(thetas);
+for i=1:length(t_out)-1
+    n_i_tau(i)=nbr_event_between_breakpoints(i, T, t_out);
+end
 
-tau_given_lambda_theta(t_out, lambdas, T)
+% fel!
+tau_given_lambda_theta = @(t,lambdas, tau,n_i) exp(-sum(lambdas.*(t(2:end)-t(1:end-1)))).*prod(lambdas.^n_i);
+
+
+tau_lambda_theta = tau_given_lambda_theta(t_out, lambdas, T, n_i_tau)
+nbr_event_between_breakpoints(1, T, t_out);
 % Function to create breakpoints, e.g evenly spaces points in time.
+
+
+%%
+
+%% Useful functions
+% Calculates nbr of event between breakpoints returns the full vector for
+% each breakpoint.
+d=2;
+breakpoints=create_breakpoints(d,T);
+n_tau= nbr_event_between_breakpoints(T, breakpoints);
+
+
 function t_out=create_breakpoints(d,tau)
-    t_out = linspace(tau(1),tau(end),d)
+    t_out = linspace(tau(1), tau(end), d+1)';
 end
 
-% Calculates nbr of event between breakpoint t, i and i+1
-function n_i = nbr_event_between_breakpoints(i, tau, t)
-    start_time = t(i);
-    end_time = t(i+1);
-    
-
-
-
+function n_tau = nbr_event_between_breakpoints(tau, breakpoints)
+    for i=1:length(breakpoints)-1
+        n_tau(i) = sum(tau <= breakpoints(i+1) & tau>=breakpoints(i)) % Larger than or equal larger than?
+    end
 end
 
+% Function to sample from conditional theta based on posterior and prior
+% In other words: f(theta|lambda,t,tau)= f(theta)*f(lambda|theta)
+function theta = sample_theta(nbr_breakpoints, psi, lambda)
+    % The conditional theta is a gamma distributed, see report. Thus we
+    % sample:
+    theta = gamrnd(2*nbr_breakpoints + 2, psi + sum(lambda));
+end
 
+% Function to sample from conditional lambda based on posterior
+% distributions. In other words:
+% f(lambda|t,theta,tau)=f(tau|lambda,t)*f(lambda|theta)
+
+function lambdas = sample_lambda(tau, theta, breakpoints, nbr_breakpoints)
+    n_tau = nbr_event_between_breakpoints(tau, breakpoints)
+    lambdas = gamrnd(2+n_tau, theta+time_difference) % time_difference= t_i+1-t_i
 end
 
