@@ -19,40 +19,32 @@ product=lambdas_given_theta.*thetas;
 
 histogram(product) % Gamma, we need to find the paramaters for each of these!
 
-%%  f(tau|lambda,t)*f(lambda|theta)
 
-% f(lambda|theta) = product
-% f(tau|lambda,t)
+%% Main script
+load('coal_mine_disasters.mat')
 
-n_i = @(tau,i) sum(tau(tau>i & tau<i+1));
+d=2; % Nbr breakpoints
+psi=2;
+N=10; % Nbr iterations
+thetas = zeros(N+1,1); % Initialize vectors of theta
+lambdas = zeros(N+1,d); % initialize matrix of lambda
+breakpoints=create_breakpoints(d,T);
+n_tau= nbr_event_between_breakpoints(T, breakpoints);
+thetas(1)=init_theta(psi); % Init theta
+lambdas(1,:)=init_lambdas(thetas(1), d); % Init lambda
 
-
-n=5; % Three breakpoits
-t_out=create_breakpoints(n,T);
-thetas = gam_theta(2,n);
-gam_lambda_theta = @(theta) gamrnd(2,theta,n,1);
-lambdas = gam_lambda_theta(thetas);
-for i=1:length(t_out)-1
-    n_i_tau(i)=nbr_event_between_breakpoints(i, T, t_out);
+% Main algorithm
+for i=1:N % Main loop
+    % Draw theta:
+    thetas(i+1)=sample_theta(d, psi, lambdas(i,:));
+    % Draw lambdas
+    lambdas(i+1,:) = sample_lambdas(T, thetas(i+1), breakpoints, d);
 end
 
-% fel!
-tau_given_lambda_theta = @(t,lambdas, tau,n_i) exp(-sum(lambdas.*(t(2:end)-t(1:end-1)))).*prod(lambdas.^n_i);
-
-
-tau_lambda_theta = tau_given_lambda_theta(t_out, lambdas, T, n_i_tau)
-nbr_event_between_breakpoints(1, T, t_out);
-% Function to create breakpoints, e.g evenly spaces points in time.
-
-
-%%
 
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
 % each breakpoint.
-d=2;
-breakpoints=create_breakpoints(d,T);
-n_tau= nbr_event_between_breakpoints(T, breakpoints);
 
 
 function t_out=create_breakpoints(d,tau)
@@ -63,6 +55,17 @@ function n_tau = nbr_event_between_breakpoints(tau, breakpoints)
     for i=1:length(breakpoints)-1
         n_tau(i) = sum(tau <= breakpoints(i+1) & tau>=breakpoints(i)) % Larger than or equal larger than?
     end
+end
+
+% Initialize theta by prior distribution:
+function init_theta = init_theta(psi)
+    init_theta = gamrnd(2,psi);
+end
+
+% Initialize lambdas by prior distribution, returns a full vector.
+function init_lambdas=init_lambdas(theta, nbr_breakpoints)
+    init_lambdas = gamrnd(2,theta, nbr_breakpoints, 1);
+
 end
 
 % Function to sample from conditional theta based on posterior and prior
@@ -77,8 +80,12 @@ end
 % distributions. In other words:
 % f(lambda|t,theta,tau)=f(tau|lambda,t)*f(lambda|theta)
 
-function lambdas = sample_lambda(tau, theta, breakpoints, nbr_breakpoints)
+function lambdas = sample_lambdas(tau, theta, breakpoints, nbr_breakpoints)
     n_tau = nbr_event_between_breakpoints(tau, breakpoints)
+    time_difference = zeros(nbr_breakpoints,1);
+    for j_1:nbr_breakpoints
+        time_difference(j)
+    end
     lambdas = gamrnd(2+n_tau, theta+time_difference) % time_difference= t_i+1-t_i
 end
 

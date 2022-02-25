@@ -21,15 +21,34 @@ histogram(product) % Gamma, we need to find the paramaters for each of these!
 
 
 %% Main script
+load('coal_mine_disasters.mat')
+
 d=2; % Nbr breakpoints
 psi=2;
-N=10; % Nbr iterations
+N=1; % Nbr iterations
+thetas = zeros(N+1,1); % Initialize vectors of theta
+lambdas = zeros(N+1,d); % initialize matrix of lambda
 breakpoints=create_breakpoints(d,T);
 n_tau= nbr_event_between_breakpoints(T, breakpoints);
-theta=init_theta(psi); % Init theta
-lambdas=init_lambdas(theta, d); % Init lambda
+thetas(1)=init_theta(psi); % Init theta
+lambdas(1,:)=init_lambdas(thetas(1), d); % Init lambda
 
-theta = sample_theta(d, psi, lambdas)
+% Main algorithm
+for i=1:N % Main loop
+    % Draw theta Gibbs
+    thetas(i+1)=sample_theta(d, psi, lambdas(i,:));
+    % Draw lambdas Gibbs
+    lambdas(i+1,:) = sample_lambdas(T, thetas(i+1), breakpoints, d);
+    
+    % Update breakpoints, MH
+        % Loop through all breakpoints.
+        % Generate random walk proposal
+        % Calculate acception probability
+        % Reject or accept the new breakpoint
+        % Update breakpoint.
+    
+end
+
 
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
@@ -42,7 +61,7 @@ end
 
 function n_tau = nbr_event_between_breakpoints(tau, breakpoints)
     for i=1:length(breakpoints)-1
-        n_tau(i) = sum(tau <= breakpoints(i+1) & tau>=breakpoints(i)) % Larger than or equal larger than?
+        n_tau(i) = sum(tau <= breakpoints(i+1) & tau>=breakpoints(i)); % Larger than or equal larger than?
     end
 end
 
@@ -69,8 +88,11 @@ end
 % distributions. In other words:
 % f(lambda|t,theta,tau)=f(tau|lambda,t)*f(lambda|theta)
 
-function lambdas = sample_lambda(tau, theta, breakpoints, nbr_breakpoints)
+function lambdas = sample_lambdas(tau, theta, breakpoints, nbr_breakpoints)
     n_tau = nbr_event_between_breakpoints(tau, breakpoints)
-    lambdas = gamrnd(2+n_tau, theta+time_difference) % time_difference= t_i+1-t_i
+    for i=1:nbr_breakpoints
+        time_difference(i) = breakpoints(i+1)-breakpoints(i);
+        lambdas(i) = gamrnd(2+n_tau(i), theta+time_difference(i))'; % time_difference= t_i+1-t_i
+    end
 end
 
