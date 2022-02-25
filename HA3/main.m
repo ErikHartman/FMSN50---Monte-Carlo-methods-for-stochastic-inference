@@ -20,16 +20,21 @@ product=lambdas_given_theta.*thetas;
 histogram(product) % Gamma, we need to find the paramaters for each of these!
 
 
-%%
+%% Main script
+d=2; % Nbr breakpoints
+psi=2;
+N=10; % Nbr iterations
+breakpoints=create_breakpoints(d,T);
+n_tau= nbr_event_between_breakpoints(T, breakpoints);
+theta=init_theta(psi); % Init theta
+lambdas=init_lambdas(theta, d); % Init lambda
+
+theta = sample_theta(d, psi, lambdas)
 
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
 % each breakpoint.
-d=2;
-breakpoints=create_breakpoints(d,T);
-n_tau= nbr_event_between_breakpoints(T, breakpoints);
-psi=2;
-%theta = sample_theta(d, psi, lambda)
+
 
 function t_out=create_breakpoints(d,tau)
     t_out = linspace(tau(1), tau(end), d+1)';
@@ -39,6 +44,17 @@ function n_tau = nbr_event_between_breakpoints(tau, breakpoints)
     for i=1:length(breakpoints)-1
         n_tau(i) = sum(tau <= breakpoints(i+1) & tau>=breakpoints(i)) % Larger than or equal larger than?
     end
+end
+
+% Initialize theta by prior distribution:
+function init_theta = init_theta(psi)
+    init_theta = gamrnd(2,psi);
+end
+
+% Initialize lambdas by prior distribution, returns a full vector.
+function init_lambdas=init_lambdas(theta, nbr_breakpoints)
+    init_lambdas = gamrnd(2,theta, nbr_breakpoints, 1);
+
 end
 
 % Function to sample from conditional theta based on posterior and prior
