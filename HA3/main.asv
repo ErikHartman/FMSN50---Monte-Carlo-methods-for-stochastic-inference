@@ -25,7 +25,7 @@ load('coal_mine_disasters.mat')
 
 d=2; % Nbr breakpoints
 psi=2;
-N=3; % Nbr iterations
+N=1; % Nbr iterations
 thetas = zeros(N+1,1); % Initialize vectors of theta
 lambdas = zeros(N+1,d); % initialize matrix of lambda
 breakpoints=create_breakpoints(d,T);
@@ -37,19 +37,19 @@ tries = zeros(N,1);
 % Main algorithm
 for i=1:N % Main loop
     % Start with MH!
-
+        nr_current_tries = 0;
+    accepted = 0;
+     %while ~accepted % oops! This never ends! Something is wrong with lambda or something
+       % [new_breakpoints, accepted] = MH(lambdas(i,:), breakpoints(:,i), T);
+       % tries(i)  = tries(i) + 1; % want around 30% acceptance rate
+  %  end
    % breakpoints(:,i+1) = new_breakpoints;
     % Draw theta Gibbs
     thetas(i+1)=sample_theta(d, psi, lambdas(i,:));
     % Draw lambdas Gibbs
     lambdas(i+1,:) = sample_lambdas(T, thetas(i+1), breakpoints, d);
     % Update breakpoints, MH
-    nr_current_tries = 0;
-    accepted = 0;
-    while ~accepted % oops! This never ends! Something is wrong with lambda or something
-     [new_breakpoints, accepted] = MH(lambdas(i,:), breakpoints(:,i), T);
-      tries(i)  = tries(i) + 1; % want around 30% acceptance rate
-    end
+
 
 end
 
@@ -110,7 +110,7 @@ end
 function theta = sample_theta(nbr_breakpoints, psi, lambda)
     % The conditional theta is a gamma distributed, see report. Thus we
     % sample:
-    theta = gamrnd(2*nbr_breakpoints + 2, 1/(psi + sum(lambda)));
+    theta = gamrnd(2*nbr_breakpoints + 2, psi + sum(lambda));
 end
 
 % Function to sample from conditional lambda based on posterior
@@ -121,7 +121,7 @@ function lambdas = sample_lambdas(tau, theta, breakpoints, nbr_breakpoints)
     n_tau = nbr_event_between_breakpoints(tau, breakpoints)
     for i=1:nbr_breakpoints
         time_difference(i) = breakpoints(i+1)-breakpoints(i);
-        lambdas(i) = gamrnd(2+n_tau(i), 1/(theta+time_difference(i)))'; % time_difference= t_i+1-t_i
+        lambdas(i) = gamrnd(2+n_tau(i), theta+time_difference(i))'; % time_difference= t_i+1-t_i
     end
 end
 
