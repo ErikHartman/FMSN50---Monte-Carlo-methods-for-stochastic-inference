@@ -23,9 +23,11 @@ histogram(product) % Gamma, we need to find the paramaters for each of these!
 %% Main script
 load('coal_mine_disasters.mat')
 
-d=2; % Nbr breakpoints
+d=4; % Nbr breakpoints
 psi=2;
-N=100; % Nbr iterations
+burn_in = 100;
+M=500;
+N=burn_in+M; % Nbr iterations
 thetas = zeros(N+1,1); % Initialize vectors of theta
 lambdas = zeros(N+1,d); % initialize matrix of lambda
 breakpoints=create_breakpoints(d,T);
@@ -33,29 +35,29 @@ n_tau= nbr_event_between_breakpoints(T, breakpoints);
 thetas(1)=init_theta(psi); % Init theta
 lambdas(1,:)=init_lambdas(thetas(1), d); % Init lambda
 tries = zeros(N,1);
-
+matrix_breakpoints = zeros(N, d+1);
 % Main algorithm, k steps
 for k=1:N % Main loop
     % Start with MH! Advice from Isabella
-    new_breakpoints = MH_algorithm(lambdas(k,:), breakpoints, T)
+    new_breakpoints = MH_algorithm(lambdas(k,:), breakpoints, T);
+    matrix_breakpoints(k,:)=new_breakpoints;
    % breakpoints(:,i+1) = new_breakpoints;
     % Draw theta Gibbs
     thetas(k+1)=sample_theta(d, psi, lambdas(k,:));
     % Draw lambdas Gibbs
     lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
-    nr_current_tries = 0;
-    accepted = 0;
 end
 
-
-%% Plot histogram with breakpoints
-figure;
+theta_est=thetas(burn_in:end);
+lambdas_est = lambdas(burn_in:end);
+breakpoints_est=matrix_breakpoints(burn_in:end,:);
+%% Plots
 hold on
 histogram(T)
-title('Disasters')
-xlabel('t')
-for k = 1:length(breakpoints)
-    xline(breakpoints(k));
+for i=1:d+1
+    xline(breakpoints_est(1,i), 'r');
+
+    xline(breakpoints_est(end,i));
 end
 hold off
 
@@ -63,8 +65,9 @@ hold off
 figure;
 hold on
 for k = 1:d
-    plot(breakpoints(k,:));
+    plot(matrix_breakpoints(:,k));
 end
+hold off
 %% Plot histogram of parameters
 figure;
 hold on;
@@ -157,7 +160,7 @@ end
 function proposed_breakpoint=random_walk_proposal(breakpoints, rho, index)
     % Contruct R
     R=rho*(breakpoints(index+1)-breakpoints(index-1));
-    epsilon = unifrnd(-R,R)
+    epsilon = unifrnd(-R,R);
     proposed_breakpoint = breakpoints(index)+epsilon;
 
 end
@@ -172,16 +175,21 @@ function acceptance_probability = calculate_accaptance_probability(lambdas_k,pro
     % For calculating f(t*) f(tau|lambda, t*), we need: 
     % Number of disasters for proposed, lambdas for iteration k and
     % proposed breakpoints:
+    if issorted(proposed_breakpoints)
     n_proposed = nbr_event_between_breakpoints(tau, proposed_breakpoints);
     n_k = nbr_event_between_breakpoints(tau, breakpoints);
     diff_proposed =proposed_breakpoints(2:end)-proposed_breakpoints(1:end-1);
     diff_breakpoints = breakpoints(2:end)-breakpoints(1:end-1);
     
     % Log since otherwise big and messy numbers
-    log_r_t_star = sum(log(diff_proposed))-sum(lambdas_k'.*diff_proposed)+sum(log(lambdas_k').*n_proposed)
-    log_r_t = sum(log(diff_breakpoints))-sum(lambdas_k'.*diff_breakpoints)+sum(log(lambdas_k').*n_k)
+    log_r_t_star = sum(log(diff_proposed))-sum(lambdas_k'.*diff_proposed)+sum(log(lambdas_k').*n_proposed);
+    log_r_t = sum(log(diff_breakpoints))-sum(lambdas_k'.*diff_breakpoints)+sum(log(lambdas_k').*n_k);
 
-    acceptance_probability = min(1,exp(log_r_t_star-log_r_t))
+    acceptance_probability = min(1,exp(log_r_t_star-log_r_t));
+    else
+        acceptance_probability=0;
+    end
+    
 end
 
 
@@ -202,7 +210,7 @@ function ret = MH_algorithm(lambdas_k, breakpoints, tau)
       suggested_breakpoints(i) = proposed_breakpoint;
       % Calculate probability of accepting the proposed breakpoint and add
       % to array.
-      acceptance_probability = calculate_accaptance_probability(lambdas_k,suggested_breakpoints, breakpoints, tau)
+      acceptance_probability = calculate_accaptance_probability(lambdas_k,suggested_breakpoints, breakpoints, tau);
       % Calculate acceptance by draw from uniform and compare with
       % acceptance rate.
        % If accepted, update breakpoint to the proposed one
