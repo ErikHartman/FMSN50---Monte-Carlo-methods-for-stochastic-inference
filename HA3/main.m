@@ -53,7 +53,7 @@ lambdas_est = lambdas(burn_in:end);
 breakpoints_est=matrix_breakpoints(burn_in:end,:);
 %% Plots
 hold on
-histogram(T)
+histogram(T, 50)
 for i=1:d+1
     xline(breakpoints_est(1,i), 'r');
 
@@ -75,6 +75,21 @@ histogram(lambdas);
 histogram(thetas);
 hold off
 
+%% Task 2.
+load('atlantic.txt')
+y=atlantic;
+n = 20;
+B = 200;
+tau_hat = mean(y);
+boot = zeros(1,B);
+for b = 1:B % bootstrap
+    I = randsample(n,n,true);
+    boot(b) = mean(y(I));
+end
+delta = sort(boot - tau_hat); % sorting to obtain quantiles
+alpha = 0.05; % CB level
+L = tau_hat - delta(ceil((1 - alpha/2)*B)); % constructing CB
+U = tau_hat - delta(ceil(alpha*B/2));
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
 % each breakpoint.
