@@ -26,7 +26,7 @@ load('coal_mine_disasters.mat')
 d=3; % Nbr breakpoints
 psi=2;
 burn_in = 10;
-M=10000;
+M=1000;
 N=burn_in+M; % Nbr iterations
 thetas = zeros(N+1,1); % Initialize vectors of theta
 lambdas = zeros(N+1,d); % initialize matrix of lambda
@@ -43,6 +43,7 @@ for k=1:N % Main loop
     [accepted, new_breakpoints] = MH_algorithm(lambdas(k,:), breakpoints, T);
     accepted_vector(k) = accepted;
     matrix_breakpoints(k,:) = new_breakpoints;
+    breakpoints = new_breakpoints;
     % breakpoints(:,i+1) = new_breakpoints;
     % Draw theta Gibbs
     thetas(k+1)=sample_theta(d, psi, lambdas(k,:));
@@ -54,6 +55,7 @@ lambdas_est = lambdas(burn_in:end);
 breakpoints_est=matrix_breakpoints(burn_in:end,:);
 
 %% Plots
+figure;
 hold on
 histogram(T, 50)
 for i=1:d+1
@@ -66,9 +68,11 @@ hold off
 %% Plot breakpoint trajectory
 figure;
 hold on
+
 for k = 2:d
     plot(matrix_breakpoints(:,k));
 end
+title('Breakpoints')
 hold off
 
 figure;
@@ -76,6 +80,7 @@ hold on
 for k = 2:d
     plot(lambdas(:,k));
 end
+title('Lambdas')
 hold off
 %% Plot histogram of parameters
 figure;
@@ -149,14 +154,14 @@ function acceptance_probability = calculate_accaptance_probability(lambdas_k,pro
     % For calculating f(t*) f(tau|lambda, t*), we need: 
     % Number of disasters for proposed, lambdas for iteration k and
     % proposed breakpoints:
-    
     if issorted(proposed_breakpoints)
         n_proposed = nbr_event_between_breakpoints(tau, proposed_breakpoints);
         n_k = nbr_event_between_breakpoints(tau, breakpoints);
-        diff_proposed =proposed_breakpoints(2:end)-proposed_breakpoints(1:end-1);  % t_i+1 - t_i
+        diff_proposed = proposed_breakpoints(2:end)-proposed_breakpoints(1:end-1);  % t_i+1 - t_i
         diff_breakpoints = breakpoints(2:end)-breakpoints(1:end-1);
 
         % Log since otherwise big and messy numbers
+        % logaritmera analytiskt
         log_r_t_star = sum(log(diff_proposed))-sum(lambdas_k'.*diff_proposed)+sum(log(lambdas_k').*n_proposed);
         log_r_t = sum(log(diff_breakpoints))-sum(lambdas_k'.*diff_breakpoints)+sum(log(lambdas_k').*n_k);
         acceptance_probability = min(1,exp(log_r_t_star-log_r_t));
@@ -185,7 +190,7 @@ function [accepted, ret] = MH_algorithm(lambdas_k, breakpoints, tau)
        % If accepted, update breakpoint to the proposed one
         accepted = 0;
       alpha = unifrnd(0,1);
-      if alpha < acceptance_probability
+      if alpha <= acceptance_probability
           breakpoints = suggested_breakpoints;
           accepted = 1;
       end
