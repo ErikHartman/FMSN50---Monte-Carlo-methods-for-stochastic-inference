@@ -24,7 +24,7 @@ histogram(product) % Gamma, we need to find the paramaters for each of these!
 load('coal_mine_disasters.mat')
 
 d=2; % Nbr breakpoints
-psi=2;
+rho=0.05;
 burn_in = 10;
 M=1000;
 N=burn_in+M; % Nbr iterations
@@ -32,7 +32,7 @@ thetas = zeros(N+1,1); % Initialize vectors of theta
 lambdas = zeros(N+1,d); % initialize matrix of lambda
 breakpoints=create_breakpoints(d,T);
 n_tau= nbr_event_between_breakpoints(T, breakpoints);
-thetas(1)=init_theta(psi); % Init theta
+thetas(1)=init_theta(rho); % Init theta
 lambdas(1,:)=init_lambdas(thetas(1), d); % Init lambda
 tries = zeros(N,1);
 matrix_breakpoints = zeros(N, d+1);
@@ -40,13 +40,13 @@ accepted_vector = zeros(N,1);
 % Main algorithm, k steps
 for k=1:N % Main loop
     % Start with MH! Advice from Isabella
-    [accepted, new_breakpoints] = MH_algorithm(lambdas(k,:), breakpoints, T);
+    [accepted, new_breakpoints] = MH_algorithm(lambdas(k,:), breakpoints, T,rho);
     accepted_vector(k) = accepted;
     matrix_breakpoints(k,:) = new_breakpoints;
     breakpoints = new_breakpoints;
     % breakpoints(:,i+1) = new_breakpoints;
     % Draw theta Gibbs
-    thetas(k+1)=sample_theta(d, psi, lambdas(k,:));
+    thetas(k+1)=sample_theta(d, rho, lambdas(k,:));
     % Draw lambdas Gibbs
     lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
 end
@@ -56,10 +56,10 @@ breakpoints_est=matrix_breakpoints(burn_in:end,:);
 %% Task 2c
 % Plot and save images for d=2,3,4,5, burn_in=1 for lambda
 d=5;
-psi=2;
+rho=0.05;
 burn_in=1;
 M=10000;
-[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M);
+[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,rho,burn_in, M, rho);
 xlabel("Iterations")
 ylabel("Lambda")
 hold on
@@ -72,10 +72,10 @@ hold off
 legend show
 %% Plots
 d=5;
-psi=2;
+rho=0.05;
 burn_in=1;
 M=10000;
-[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M);
+[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,rho,burn_in, M, rho);
 figure;
 hold on
 histogram(T, 50)
@@ -89,10 +89,10 @@ hold off
 
 %% Plot breakpoint trajectory, be careful abou notation
 d=5;
-psi=2;
+rho=0.05;
 burn_in=1;
 M=10000;
-[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M);
+[theta_est, lambdas_est, breakpoints_est, ~]=main_script(d,T,rho,burn_in, M, rho);
 figure;
 hold on
 for k = 2:d
@@ -112,24 +112,24 @@ end
 
 hold off
 
-%% Try different psi
+%% 2d. Try different psi
 
 d=5;
+rho=0.05;
 burn_in=100;
 M=1000;
-figure;
 len = 50;
 psi_x=1:1:50;
 mean_theta = zeros(len,1);
 var_theta = zeros(len,1)
 mean_lambda = zeros(len,d);
 var_lambda = zeros(len,d);
-for psi=1:len
-    [theta_est, lambda_est, ]=main_script(d,T,psi,burn_in, M);
-    mean_theta(psi)=mean(theta_est);
-    var_theta(psi) = var(theta_est);
-    mean_lambda(psi, :) = mean(lambda_est)';
-    var_lambda(psi, :) = var(lambda_est);
+for rho=1:len
+    [theta_est, lambda_est,~, ~ ]=main_script(d,T,rho,burn_in, M, rho);
+    mean_theta(rho)=mean(theta_est);
+    var_theta(rho) = var(theta_est);
+    mean_lambda(rho, :) = mean(lambda_est)';
+    var_lambda(rho, :) = var(lambda_est);
 end
 %%
 figure;
@@ -168,6 +168,35 @@ xlabel("\psi")
 ylabel("Variance \lambda")	
 set(gca,'FontSize',14)
 legend show
+
+%% 2e change rho and plot acceptance probability
+d=5;
+burn_in=100;
+M=1000;
+rho_x=0.001:0.001:0.1;
+len = length(rho_x);
+mean_acceptance = zeros(len,1);
+var_acceptance = zeros(len,1);
+
+for rho=1:len
+    [theta_est, lambda_est, ~, accepted_vector_est]=main_script(d,T,rho,burn_in, M, rho);
+    mean_acceptance(rho)=mean(accepted_vector_est);
+    var_acceptance(rho) = var(accepted_vector_est);
+
+end
+
+%%
+figure;
+plot(rho_x, mean_acceptance, 'bo')
+xlabel("\rho")
+ylabel("Mean ACR")
+set(gca,'FontSize',14)
+
+figure;
+plot(rho_x, var_acceptance, 'bo')
+xlabel("\rho")
+ylabel("Variance ACR")
+set(gca,'FontSize',14)
 
 
 %% Useful functions
@@ -251,10 +280,9 @@ end
 
 % Function return new sampled breakpoints for each iteration, see slide 5
 % Lecture 10. breakpoints is the breakpoints input for iteration k.
-function [accepted, ret] = MH_algorithm(lambdas_k, breakpoints, tau)
+function [accepted, ret] = MH_algorithm(lambdas_k, breakpoints, tau, rho)
     % Start by copying the old breakpoints to next step since only a
     % fraction of them will update.
-    rho=0.05;
     % Main for loop, go through all breakpoints and propose new ones.
     for i=2:length(breakpoints)-1
       suggested_breakpoints = breakpoints;
@@ -279,7 +307,7 @@ end
 
 % Main script, d = mbr breakepoints, T=tau, psi=hyperparameter,
 % burn_in=iterations to rm from estimate, M= actrual estimate iterations.
-function [theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M)
+function [theta_est, lambdas_est, breakpoints_est, accepted_vector_est]=main_script(d,T,psi,burn_in, M, rho)
     N=burn_in+M; % Nbr iterations
     thetas = zeros(N+1,1); % Initialize vectors of theta
     lambdas = zeros(N+1,d); % initialize matrix of lambda
@@ -287,13 +315,12 @@ function [theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, 
     n_tau= nbr_event_between_breakpoints(T, breakpoints);
     thetas(1)=init_theta(psi); % Init theta
     lambdas(1,:)=init_lambdas(thetas(1), d); % Init lambda
-    tries = zeros(N,1);
     matrix_breakpoints = zeros(N, d+1);
     accepted_vector = zeros(N,1);
     % Main algorithm, k steps
     for k=1:N % Main loop
         % Start with MH! Advice from Isabella
-        [accepted, new_breakpoints] = MH_algorithm(lambdas(k,:), breakpoints, T);
+        [accepted, new_breakpoints] = MH_algorithm(lambdas(k,:), breakpoints, T, rho);
         accepted_vector(k) = accepted;
         matrix_breakpoints(k,:) = new_breakpoints;
         breakpoints = new_breakpoints;
@@ -303,6 +330,7 @@ function [theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, 
         % Draw lambdas Gibbs
         lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
     end
+    accepted_vector_est = accepted_vector(burn_in:end);
     theta_est=thetas(burn_in:end);
     lambdas_est = lambdas(burn_in:end, :);
     breakpoints_est=matrix_breakpoints(burn_in:end,:);
