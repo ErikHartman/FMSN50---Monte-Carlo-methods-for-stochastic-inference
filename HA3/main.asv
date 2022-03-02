@@ -51,29 +51,35 @@ for k=1:N % Main loop
     lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
 end
 theta_est=thetas(burn_in:end);
-lambdas_est = lambdas(burn_in:end);
+lambdas_est = lambdas(burn_in:end, :);
 breakpoints_est=matrix_breakpoints(burn_in:end,:);
 %% Task 2c
-% Plot and save images for d=1,2,3,4,5, burn_in=0
-d=3;
+% Plot and save images for d=2,3,4,5, burn_in=1 for lambda
+d=5;
 psi=2;
 burn_in=1;
 M=10000;
 [theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M);
-plot(lambdas)
 xlabel("Iterations")
 ylabel("Lambda")
-for i=2:d
-    str=['Lambda: ' num2str(d-1)]
-    legend_list=
+hold on
+for i=1:d
+    str=['Lambda: ' num2str(i)]
+    plot(lambdas_est(:, i),'DisplayName',str)
 end
-legend(legend_list)
 title(['Nbr breakpoints: ' num2str(d-1)])
-
+hold off
+legend show
 %% Plots
+d=5;
+psi=2;
+burn_in=1;
+M=10000;
+[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M);
 figure;
 hold on
 histogram(T, 50)
+ylabel("Frequency")
 for i=1:d+1
     %xline(breakpoints_est(1,i), 'r--');
 
@@ -81,23 +87,21 @@ for i=1:d+1
 end
 hold off
 
-%% Plot breakpoint trajectory
-figure;
-hold on
-
-for k = 2:d
-    plot(matrix_breakpoints(:,k));
-end
-title('Breakpoints')
-hold off
-
+%% Plot breakpoint trajectory, be careful abou notation
+d=5;
+psi=2;
+burn_in=1;
+M=10000;
+[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M);
 figure;
 hold on
 for k = 2:d
-    plot(lambdas(:,k));
+    str = ['Breakpoint: ' num2str(k-1)];
+    plot(breakpoints_est(:,k), 'DisplayName', str);
 end
-title('Lambdas')
+title(['Number of breakpoints: ' num2str(d-1)])
 hold off
+legend show
 %% Plot histogram of parameters
 figure;
 hold on;
@@ -107,6 +111,19 @@ for k = 2:d
 end
 
 hold off
+
+%% Try different psi
+d=5;
+burn_in=1;
+M=1000;
+hold on
+for psi=1:10
+    [theta_est, ~, ~]=main_script(d,T,psi,burn_in, M);
+    thet
+    plot(psi, theta_est(end))
+end
+hold off
+
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
 % each breakpoint.
@@ -241,6 +258,6 @@ function [theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, 
         lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
     end
     theta_est=thetas(burn_in:end);
-    lambdas_est = lambdas(burn_in:end);
+    lambdas_est = lambdas(burn_in:end, :);
     breakpoints_est=matrix_breakpoints(burn_in:end,:);
 end

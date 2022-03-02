@@ -111,6 +111,65 @@ for k = 2:d
 end
 
 hold off
+
+%% Try different psi
+
+d=5;
+burn_in=100;
+M=1000;
+figure;
+len = 50;
+psi_x=1:1:50;
+mean_theta = zeros(len,1);
+var_theta = zeros(len,1)
+mean_lambda = zeros(len,d);
+var_lambda = zeros(len,d);
+for psi=1:len
+    [theta_est, lambda_est, ]=main_script(d,T,psi,burn_in, M);
+    mean_theta(psi)=mean(theta_est);
+    var_theta(psi) = var(theta_est);
+    mean_lambda(psi, :) = mean(lambda_est)';
+    var_lambda(psi, :) = var(lambda_est);
+end
+%%
+figure;
+plot(psi_x, mean_theta, 'bo')
+xlabel("\psi")	
+ylabel("Mean \theta")	
+set(gca,'FontSize',14)
+
+figure;
+plot(psi_x, var_theta, 'bo')
+xlabel("\psi")	
+ylabel("Variance \theta")	
+set(gca,'FontSize',14)
+%%
+figure;
+hold on
+for i=1:d
+    str=['\lambda' num2str(i)];
+    plot(psi_x,mean_lambda(:,i), '.', 'MarkerSize', 14, 'DisplayName', str)
+end
+hold off
+xlabel("\psi")	
+ylabel("Mean \lambda")	
+set(gca,'FontSize',14)
+legend show
+
+%%
+figure;
+hold on
+for i=1:d
+    str=['\lambda' num2str(i)];
+    plot(psi_x,var_lambda(:,i), '.', 'MarkerSize', 14, 'DisplayName', str)
+end
+hold off
+xlabel("\psi")	
+ylabel("Variance \lambda")	
+set(gca,'FontSize',14)
+legend show
+
+
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
 % each breakpoint.
