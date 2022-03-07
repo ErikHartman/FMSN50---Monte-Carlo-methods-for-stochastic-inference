@@ -55,7 +55,7 @@ lambdas_est = lambdas(burn_in:end, :);
 breakpoints_est=matrix_breakpoints(burn_in:end,:);
 %% Task 2c
 % Plot and save images for d=2,3,4,5, burn_in=1 for lambda
-d=5;
+d=2;
 rho=0.05;
 burn_in=1;
 M=10000;
@@ -67,9 +67,12 @@ for i=1:d
     str=['Lambda: ' num2str(i)]
     plot(lambdas_est(:, i),'DisplayName',str)
 end
-title(['Nbr breakpoints: ' num2str(d-1)])
+%title(['Nbr breakpoints: ' num2str(d-1)])
 hold off
 legend show
+
+%%
+
 %% Plots
 d=5;
 rho=0.05;
@@ -80,15 +83,15 @@ figure;
 hold on
 histogram(T, 50)
 ylabel("Frequency")
-for i=1:d+1
+for i=2:d
     %xline(breakpoints_est(1,i), 'r--');
 
-    xline(breakpoints_est(end,i));
+    xline(breakpoints_est(end,i), 'r--');
 end
 hold off
 
 %% Plot breakpoint trajectory, be careful abou notation
-d=5;
+d=4;
 rho=0.05;
 burn_in=1;
 M=10000;
@@ -124,14 +127,17 @@ mean_theta = zeros(len,1);
 var_theta = zeros(len,1)
 mean_lambda = zeros(len,d);
 var_lambda = zeros(len,d);
-for rho=1:len
-    [theta_est, lambda_est,~, ~ ]=main_script(d,T,rho,burn_in, M, rho);
-    mean_theta(rho)=mean(theta_est);
-    var_theta(rho) = var(theta_est);
-    mean_lambda(rho, :) = mean(lambda_est)';
-    var_lambda(rho, :) = var(lambda_est);
+for psi=1:len
+    [theta_est, lambda_est, breakpoints, ~ ]=main_script(d,T,psi,burn_in, M, rho);
+    mean_breakpoints(psi,:) = mean(breakpoints);
+    var_breakpoints(psi,:) = var(breakpoints);
+
+    mean_theta(psi)=mean(theta_est);
+    var_theta(psi) = var(theta_est);
+    mean_lambda(psi, :) = mean(lambda_est)';
+    var_lambda(psi, :) = var(lambda_est);
 end
-%%
+%% Posterior theta and t
 figure;
 plot(psi_x, mean_theta, 'bo')
 xlabel("\psi")	
@@ -143,7 +149,28 @@ plot(psi_x, var_theta, 'bo')
 xlabel("\psi")	
 ylabel("Variance \theta")	
 set(gca,'FontSize',14)
-%%
+
+figure;
+hold on
+for k = 2:d
+    str = ['Breakpoint: ' num2str(k-1)];
+    plot(psi_x,mean_breakpoints(:,k), 'o','DisplayName', str);
+end
+xlabel("\psi")	
+ylabel("Mean breakpoint position")
+hold off
+legend show
+figure;
+hold on
+for k = 2:d
+    str = ['Breakpoint: ' num2str(k-1)];
+    plot(psi_x,var_breakpoints(:,k), 'o','DisplayName', str);
+end
+xlabel("\psi")	
+ylabel("Variance breakpoint position")
+hold off
+legend show
+%% Posterior lambda
 figure;
 hold on
 for i=1:d
@@ -172,20 +199,28 @@ legend show
 %% 2e change rho and plot acceptance probability
 d=5;
 burn_in=100;
-M=1000;
+M=10000;
 rho_x=0.001:0.001:0.1;
 len = length(rho_x);
 mean_acceptance = zeros(len,1);
 var_acceptance = zeros(len,1);
+psi=2;
 
-for rho=1:len
-    [theta_est, lambda_est, ~, accepted_vector_est]=main_script(d,T,rho,burn_in, M, rho);
-    mean_acceptance(rho)=mean(accepted_vector_est);
-    var_acceptance(rho) = var(accepted_vector_est);
+for i=1:len
+    [theta_est, lambda_est, breakpoints, accepted_vector_est]=main_script(d,T,psi,burn_in, M, rho_x(i));
+    mean_acceptance(i)=mean(accepted_vector_est);
+    var_acceptance(i) = var(accepted_vector_est);
+    mean_breakpoints(i,:) = mean(breakpoints);
+    var_breakpoints(i,:) = var(breakpoints);
+
+    mean_theta(i)=mean(theta_est);
+    var_theta(i) = var(theta_est);
+    mean_lambda(i, :) = mean(lambda_est)';
+    var_lambda(i, :) = var(lambda_est);
 
 end
 
-%%
+%% ATC
 figure;
 plot(rho_x, mean_acceptance, 'bo')
 xlabel("\rho")
@@ -198,6 +233,63 @@ xlabel("\rho")
 ylabel("Variance ACR")
 set(gca,'FontSize',14)
 
+%% Breakpoints t
+figure;
+hold on
+for k = 2:d
+    str = ['Breakpoint: ' num2str(k-1)];
+    plot(rho_x,mean_breakpoints(:,k), 'o','DisplayName', str);
+end
+xlabel("\rho")	
+ylabel("Variance breakpoint position")
+hold off
+legend show
+
+figure;
+hold on
+for k = 2:d
+    str = ['Breakpoint: ' num2str(k-1)];
+    plot(rho_x,var_breakpoints(:,k), 'o','DisplayName', str);
+end
+xlabel("\rho")	
+ylabel("Variance breakpoint position")
+hold off
+legend show
+%% Lambdas
+figure;
+hold on
+for k = 1:d
+    str = ['Lambda: ' num2str(k)];
+    plot(rho_x,mean_lambda(:,k), 'o','DisplayName', str);
+end
+xlabel("\rho")	
+ylabel("Mean lambda positions")
+hold off
+legend show
+
+figure;
+hold on
+for k = 1:d
+    str = ['Lambda: ' num2str(k)];
+    plot(rho_x,var_lambda(:,k), 'o','DisplayName', str);
+end
+xlabel("\rho")	
+ylabel("Variance lambda positions")
+hold off
+legend show
+
+%% Thetas
+figure;
+plot(rho_x, mean_theta, 'bo')
+xlabel("\rho")
+ylabel("Mean theta")
+set(gca,'FontSize',14)
+
+figure;
+plot(rho_x, var_theta, 'bo')
+xlabel("\rho")
+ylabel("Variance theta")
+set(gca,'FontSize',14)
 
 %% Useful functions
 % Calculates nbr of event between breakpoints returns the full vector for
@@ -284,6 +376,8 @@ function [accepted, ret] = MH_algorithm(lambdas_k, breakpoints, tau, rho)
     % Start by copying the old breakpoints to next step since only a
     % fraction of them will update.
     % Main for loop, go through all breakpoints and propose new ones.
+     accepted = 0;
+
     for i=2:length(breakpoints)-1
       suggested_breakpoints = breakpoints;
       % Propose a random walk for each breakpoint
@@ -295,11 +389,10 @@ function [accepted, ret] = MH_algorithm(lambdas_k, breakpoints, tau, rho)
       % Calculate acceptance by draw from uniform and compare with
       % acceptance rate.
        % If accepted, update breakpoint to the proposed one
-        accepted = 0;
       alpha = unifrnd(0,1);
       if alpha <= acceptance_probability
           breakpoints = suggested_breakpoints;
-          accepted = 1;
+          accepted = accepted+1;
       end
     end
     ret = breakpoints;
@@ -330,7 +423,7 @@ function [theta_est, lambdas_est, breakpoints_est, accepted_vector_est]=main_scr
         % Draw lambdas Gibbs
         lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
     end
-    accepted_vector_est = accepted_vector(burn_in:end);
+    accepted_vector_est = (accepted_vector(1:end))/d;
     theta_est=thetas(burn_in:end);
     lambdas_est = lambdas(burn_in:end, :);
     breakpoints_est=matrix_breakpoints(burn_in:end,:);
