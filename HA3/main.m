@@ -1,65 +1,18 @@
 %% Part 1
 load('coal_mine_disasters.mat')
+%% Task 2b - see function main_script at the end of the file.
 
-% Plot the data
-%histogram (T)
-
-% Define initial gamma(2,psi) to sample our theta, start by setting psi=1.
-% f(theta) in the task
-n=2000
-gam_theta = @(psi,n) gamrnd(2,psi,n,1)
-thetas = gam_theta(2,n);
-
-% f(lambda|theta)
-gam_lambda_theta = @(theta) gamrnd(2,theta,n,1)
-lambdas_given_theta = gam_lambda_theta(thetas);
-
-% f(lambda|theta)*f(theta)
-product=lambdas_given_theta.*thetas;
-
-histogram(product) % Gamma, we need to find the paramaters for each of these!
-
-
-%% Main script
-load('coal_mine_disasters.mat')
-
-d=2; % Nbr breakpoints
-rho=0.05;
-burn_in = 10;
-M=1000;
-N=burn_in+M; % Nbr iterations
-thetas = zeros(N+1,1); % Initialize vectors of theta
-lambdas = zeros(N+1,d); % initialize matrix of lambda
-breakpoints=create_breakpoints(d,T);
-n_tau= nbr_event_between_breakpoints(T, breakpoints);
-thetas(1)=init_theta(rho); % Init theta
-lambdas(1,:)=init_lambdas(thetas(1), d); % Init lambda
-tries = zeros(N,1);
-matrix_breakpoints = zeros(N, d+1);
-accepted_vector = zeros(N,1);
-% Main algorithm, k steps
-for k=1:N % Main loop
-    % Start with MH! Advice from Isabella
-    [accepted, new_breakpoints] = MH_algorithm(lambdas(k,:), breakpoints, T,rho);
-    accepted_vector(k) = accepted;
-    matrix_breakpoints(k,:) = new_breakpoints;
-    breakpoints = new_breakpoints;
-    % breakpoints(:,i+1) = new_breakpoints;
-    % Draw theta Gibbs
-    thetas(k+1)=sample_theta(d, rho, lambdas(k,:));
-    % Draw lambdas Gibbs
-    lambdas(k+1,:) = sample_lambdas(T, thetas(k+1), breakpoints, d);
-end
-theta_est=thetas(burn_in:end);
-lambdas_est = lambdas(burn_in:end, :);
-breakpoints_est=matrix_breakpoints(burn_in:end,:);
 %% Task 2c
-% Plot and save images for d=2,3,4,5, burn_in=1 for lambda
+% Plot and save images for d=2,3,4,5, burn_in=1, as we want to see that
+% trajectory of the breakpoints.
 d=2;
 rho=0.05;
+psi=2;
 burn_in=1;
 M=10000;
-[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,rho,burn_in, M, rho);
+[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M, rho);
+
+%Plot Lambda
 xlabel("Iterations")
 ylabel("Lambda")
 hold on
@@ -71,14 +24,17 @@ end
 hold off
 legend show
 
-%%
+%% Plot theta
+plot(theta_est)
 
-%% Plots
+%% More plots, now for breakpoint trajectory in histogram
+% Try d=2,3,4,5
 d=5;
 rho=0.05;
 burn_in=1;
 M=10000;
-[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,rho,burn_in, M, rho);
+psi=2;
+[theta_est, lambdas_est, breakpoints_est]=main_script(d,T,psi,burn_in, M, rho);
 figure;
 hold on
 histogram(T, 50)
@@ -90,12 +46,13 @@ for i=2:d
 end
 hold off
 
-%% Plot breakpoint trajectory, be careful abou notation
+%% Plot breakpoint trajectory in time
 d=4;
+psi=2;
 rho=0.05;
 burn_in=1;
 M=10000;
-[theta_est, lambdas_est, breakpoints_est, ~]=main_script(d,T,rho,burn_in, M, rho);
+[theta_est, lambdas_est, breakpoints_est, ~]=main_script(d,T,psi,burn_in, M, rho);
 figure;
 hold on
 for k = 2:d
@@ -105,15 +62,6 @@ end
 title(['Number of breakpoints: ' num2str(d-1)])
 hold off
 legend show
-%% Plot histogram of parameters
-figure;
-hold on;
-for k = 2:d
-    histogram(lambdas(:,k));
-    histogram(thetas);    
-end
-
-hold off
 
 %% 2d. Try different psi
 
@@ -137,7 +85,7 @@ for psi=1:len
     mean_lambda(psi, :) = mean(lambda_est)';
     var_lambda(psi, :) = var(lambda_est);
 end
-%% Posterior theta and t
+%% Plot posterior theta and t
 figure;
 plot(psi_x, mean_theta, 'bo')
 xlabel("\psi")	
@@ -170,7 +118,7 @@ xlabel("\psi")
 ylabel("Variance breakpoint position")
 hold off
 legend show
-%% Posterior lambda
+%% Posterior lambda mean
 figure;
 hold on
 for i=1:d
@@ -183,7 +131,7 @@ ylabel("Mean \lambda")
 set(gca,'FontSize',14)
 legend show
 
-%%
+%% Variance lambda
 figure;
 hold on
 for i=1:d
